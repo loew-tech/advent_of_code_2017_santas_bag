@@ -1,12 +1,12 @@
 import inspect
 import sys
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 from functools import cache
 from operator import floordiv, sub
 from random import randint
 from typing import List, Callable, Any, Tuple
 
-from santas_bag.search import dfs
+from santas_bag.search import dfs, search
 from santas_bag.utils import read_input, time_execution
 from santas_bag.parse import ints
 from santas_bag.graph import transpose_graph
@@ -71,7 +71,8 @@ def day_4(part_1=True) -> int:
 
 @time_execution
 def day_7(part_1=True) -> str | Any:
-    graph = {}
+    grph = {}
+    vertex_weights = {}
     leaves = []
     def parse(line):
         edges = ''
@@ -83,14 +84,16 @@ def day_7(part_1=True) -> str | Any:
         else:
             leaves.append((v.strip(), ints(w[0])[0]))
         v = v.strip()
-        graph[v] = []
+        grph[v] = []
         w = ints(w[0])[0]
+        vertex_weights[v] = w
         for e in edges.split(', '):
             if not e.strip():
                 continue
-            graph[v].append((e.strip(), w))
+            grph[v].append(e.strip())
 
     _read_input(7, parse=parse)
+    graph = {v: [(vv, vertex_weights[vv]) for vv in nghbrs] for v, nghbrs in grph.items()}
     inverse = transpose_graph(graph)
 
     if part_1:
@@ -99,7 +102,52 @@ def day_7(part_1=True) -> str | Any:
                  lambda n, s, *args, **kwargs: not s.get(n[0]),
                  lambda n, s, *args, **kwargs: s.get(n[0], []))
         return root
-    return None
+
+    def get_neighbors(node, space, *args, **kwargs):
+        print(f'\tneighbors {node=}')
+        n, wght = node
+        for v, w in space.get(n, []):
+            yield v, w + wght
+
+    stack_weights = defaultdict(lambda: defaultdict(int))
+    def get_state(node):
+        print(f'\tstate {node=}')
+        n, wght = node
+        parent = inverse[n][0][0]
+        stack_weights[parent][wght] += 1
+        return n
+
+    def is_terminal(node, space, *args, **kwargs):
+        print(f'\tterminal {node=}')
+        n, wght = node
+        parent = space[n][0][0]
+        if len(stack_weights[parent]) > 1 and max(stack_weights[parent].values()) > 1:
+            print('**IS TERMINAL**')
+            return True
+        return False
+
+    q = deque([(l, 0) for l in leaves])
+    print(q[0])
+    (child, _), _ = search(q, inverse, q.popleft, q.append, is_terminal, get_neighbors, get_state)
+    for k, v in stack_weights.items():
+        if len(v) > 1:
+            print(k, v)
+
+    parent, _ = inverse[child][0]
+    print(f'\n{child=} {parent=}')
+
+    child_wght = vertex_weights[child]
+    wrong, right = 0, 0
+    for w, count in stack_weights[parent].items():
+        if count > 1:
+            right = w
+        else:
+            wrong = w
+
+    print(f'{child_wght=} {wrong=} {right=}')
+    diff = right - wrong
+    # @TODO: wrong answer
+    return child_wght + diff
 
 
 if __name__ == '__main__':
