@@ -1,6 +1,7 @@
 import inspect
 import sys
 from collections import Counter, defaultdict, deque
+from datetime import datetime
 from operator import floordiv, sub
 from typing import List, Callable, Any, Tuple
 
@@ -105,6 +106,45 @@ def day_4(part_1=True) -> int:
 
     valid = is_valid_1 if part_1 else is_valid_2
     return sum(valid(passphrase) for passphrase in passphrases)
+
+
+@time_execution
+def day_5(part_1=True) -> int:
+    jumps: List[int] = _read_input(5, parse=int)
+
+    steps = indx = 0
+    while 0 <= indx < len(jumps):
+        steps += 1
+        val = jumps[indx]
+        if not part_1 and val >= 3:
+            jumps[indx] -= 1
+        else:
+            jumps[indx] += 1
+        indx += val
+    return steps
+
+    # def is_terminal(indx, space, *args, **kwargs):
+    #     print(f'\n\tTERMINAL: {indx=} {not 0 <= indx < len(space)=}')
+    #     print(f'\t\t{[f'({v})' if i == indx else f'{v}' for i, v in enumerate(space)]}')
+    #     return not (0 <= indx < len(space))
+    #
+    # def get_neighbors(indx, space, *args, **kwargs):
+    #     val = space[indx]
+    #     space[indx] += 1
+    #     print(f'\tNEIGHBOR: {indx=} {val=} jumps[{indx}]={jumps[indx]} {indx + (val or 1)=}')
+    #     print(f'\t\tyielding {indx + val if val else indx}')
+    #     # input('BREAK')
+    #     yield indx + val
+    #
+    # def get_state(indx):
+    #     return indx, datetime.now()
+    #
+    # _, steps = dfs(0,
+    #                jumps,
+    #                is_terminal,
+    #                get_neighbors,
+    #                get_state=get_state)
+    # return steps
 
 
 @time_execution
