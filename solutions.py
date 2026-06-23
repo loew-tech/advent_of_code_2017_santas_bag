@@ -1,13 +1,10 @@
 import inspect
 import sys
 from collections import Counter, defaultdict, deque
-from functools import cache
 from operator import floordiv, sub
-from random import randint
 from typing import List, Callable, Any, Tuple
 
-import santas_bag
-from santas_bag.constants import CARDINAL_DIRECTIONS
+from santas_bag.constants import ALL_DIRECTIONS
 from santas_bag.grid import taxi_distance
 from santas_bag.search import dfs, search
 from santas_bag.utils import read_input, time_execution
@@ -55,24 +52,40 @@ def day_2(part_1=True) -> int:
 def day_3(part_1=True) -> int:
     target: int = _read_input(3, delim=None, parse=int)
     print(f'{target=}')
+    incs = ((0, -1), (1, 0), (0, 1), (-1, 0))
     if part_1:
         total_squares = side_len = 1
         while total_squares < target:
             side_len += 2
             total_squares = side_len**2
 
-        incs, len_ = ((0, -1), (1, 0), (0, 1), (-1, 0)), side_len - 1
+        len_ = side_len - 1
         y, x, i = -(side_len // 2), (side_len // 2), 0
         while total_squares > target:
             yi, xi = incs[i]
             y += yi
             x += xi
             if not (len_:=len_-1):
-                i = (i+1) % len(incs)
+                i = (i + 1) % len(incs)
                 len_ = side_len - 1
             total_squares-=1
         return taxi_distance(0, 0, y, x)
-    return NotImplemented
+    memory = {(0, 0): 1}
+    side_count, i = 0, 0
+    y, x, step_size = 0, 0, 1
+    while True:
+        for _ in range(2):
+            for _ in range(step_size):
+                yi, xi = incs[i]
+                y += yi
+                x += xi
+                val = sum(memory.get((y + yd, x + xd), 0) for yd, xd in ALL_DIRECTIONS)
+                if val > target:
+                    return val
+                memory[(y, x)] = val
+            i = (i + 1) % len(incs)
+        step_size += 1
+
 
 @time_execution
 def day_4(part_1=True) -> int:
