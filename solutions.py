@@ -7,6 +7,8 @@ from random import randint
 from typing import List, Callable, Any, Tuple
 
 import santas_bag
+from santas_bag.constants import CARDINAL_DIRECTIONS
+from santas_bag.grid import taxi_distance
 from santas_bag.search import dfs, search
 from santas_bag.utils import read_input, time_execution
 from santas_bag.parse import ints
@@ -48,6 +50,29 @@ def day_2(part_1=True) -> int:
     op_ = sub if part_1 else floordiv
     return sum(op_(mx, mn) for mx, mn in data)
 
+
+@time_execution
+def day_3(part_1=True) -> int:
+    target: int = _read_input(3, delim=None, parse=int)
+    print(f'{target=}')
+    if part_1:
+        total_squares = side_len = 1
+        while total_squares < target:
+            side_len += 2
+            total_squares = side_len**2
+
+        incs, len_ = ((0, -1), (1, 0), (0, 1), (-1, 0)), side_len - 1
+        y, x, i = -(side_len // 2), (side_len // 2), 0
+        while total_squares > target:
+            yi, xi = incs[i]
+            y += yi
+            x += xi
+            if not (len_:=len_-1):
+                i = (i+1) % len(incs)
+                len_ = side_len - 1
+            total_squares-=1
+        return taxi_distance(0, 0, y, x)
+    return NotImplemented
 
 @time_execution
 def day_4(part_1=True) -> int:
