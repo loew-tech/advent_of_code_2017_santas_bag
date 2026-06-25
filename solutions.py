@@ -141,11 +141,18 @@ def day_6(part_1=True) -> int:
             banks[indx] += 1
             indx = (indx + 1) % len(banks)
 
-    seen_, count = set(), 0
-    while (t:=tuple(banks)) not in seen_ and (count := count + 1):
-        seen_.add(t)
+    seen_, count = defaultdict(list), 0
+    observe_count = 2
+    while True:
+        t = tuple(banks)
+        seen_[t].append(count)
+
+        if len(seen_[t]) == 2:
+            break
+
+        count += 1
         distribute(banks.index(max(banks)))
-    return count
+    return count if part_1 else seen_[t][-1] - seen_[t][0]
 
 
 @time_execution
