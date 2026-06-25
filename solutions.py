@@ -129,6 +129,26 @@ def day_5(part_1=True) -> int | float:
 
 
 @time_execution
+def day_6(part_1=True) -> int:
+    banks: List = _read_input(6, delim=None, parse=ints)
+
+    def distribute(indx: int) -> None:
+        val = banks[indx]
+        banks[indx] = 0
+        indx = (indx + 1) % len(banks)
+        while val:
+            val -= 1
+            banks[indx] += 1
+            indx = (indx + 1) % len(banks)
+
+    seen_, count = set(), 0
+    while (t:=tuple(banks)) not in seen_ and (count := count + 1):
+        seen_.add(t)
+        distribute(banks.index(max(banks)))
+    return count
+
+
+@time_execution
 def day_7(part_1=True) -> str | Any:
     grph = {}
     vertex_weights = {}
