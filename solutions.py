@@ -276,8 +276,6 @@ def day_18(part_1=True) -> int:
             return True
         except ValueError:
             return False
-    registers = defaultdict(int)
-    output, rcvd = [], []
 
     def get_instruction(line: str) -> str:
         return line.split()[0]
@@ -286,44 +284,35 @@ def day_18(part_1=True) -> int:
         _, *args = line.split()
         return tuple(args)
 
+    parse = get_parse_instruction(get_instruction, get_args)
+    instructions: List[Instruction] = _read_input(18, parse=parse)
+
+    registers = defaultdict(int)
     def value(key: str | int) -> int:
         return registers[key] if not is_int(key) else int(key)
 
-    def set_(reg, val: str | int) -> None:
-        registers[reg] = value(val)
+    def set_val(register, val):
+        registers[register] = val
 
-    def add(reg, val: str | int) -> None:
-        registers[reg] += value(val)
-
-    def mul(reg, val: str | int) -> None:
-        registers[reg] *= value(val)
-
-    def mod(reg, val: str | int) -> None:
-        registers[reg] %= value(val)
-
+    output, rcvd = [], []
     ops_ = {
         'snd': lambda x: output.append(value(x)),
-        'set': set_,
-        'add': add,
-        'mul': mul,
-        'mod': mod,
+        'set': lambda x, y: set_val(x, value(y)),
+        'add': lambda x, y: set_val(x, operator.add(value(x), value(y))),
+        'mul': lambda x, y: set_val(x, operator.mul(value(x), value(y))),
+        'mod': lambda x, y: set_val(x, operator.mod(value(x), value(y))),
         'rcv': lambda x: value(x) and (rcvd.append(output[-1]) or float('inf')),
         'jgz': lambda x, y: value(y) if value(x) else None
     }
 
-    parse = get_parse_instruction(get_instruction, get_args)
-    instructions: List[Instruction] = _read_input(18, parse=parse)
-
     instruction_execution(instructions, ops_)
     return rcvd[0]
-
-# 2147483647 >
 
 
 if __name__ == '__main__':
     args_ = (f'day_{i}' for i in (sys.argv[1:] if
-                                 sys.argv[1:] else range(1, 26)) if
-            type(i) == int or i.isnumeric())
+                                  sys.argv[1:] else range(1, 26)) if
+             type(i) == int or i.isnumeric())
     members = inspect.getmembers(inspect.getmodule(inspect.currentframe()))
     funcs = {name: member for name, member in members
              if inspect.isfunction(member)}
