@@ -8,10 +8,10 @@ from typing import List, Callable, Any, Tuple
 
 from santas_bag.constants import ALL_DIRECTIONS
 from santas_bag.grid import taxi_distance
-from santas_bag.registers import Instruction, CompiledInstruction, compiled_instruction_execution
+from santas_bag.registers import Instruction, CompiledInstruction, compiled_instruction_execution, instruction_execution
 from santas_bag.search import dfs, search
 from santas_bag.utils import read_input, time_execution
-from santas_bag.parse import ints
+from santas_bag.parse import ints, get_parse_instruction
 from santas_bag.graph import transpose_graph, get_in_degrees
 
 with open('.env') as f:
@@ -231,7 +231,7 @@ def day_7(part_1=True) -> str | Any:
 
 @time_execution
 def day_8(part_1=True):
-    ops_ = {
+    conditionals = {
         '<=': operator.le,
         '>=': operator.ge,
         '==': operator.eq,
@@ -261,11 +261,63 @@ def day_8(part_1=True):
 
     def parse(line: str) -> CompiledInstruction:
         reg, action, amt, _, val1, conditional, val2 = line.split()
-        return CompiledInstruction(execute, (reg, action, amt, ops_[conditional], val1, val2))
+        return CompiledInstruction(execute, (reg, action, amt, conditionals[conditional], val1, val2))
 
     instructions = _read_input(8, parse=parse)
     compiled_instruction_execution(instructions)
     return max(registers.values()) if part_1 else max_
+
+
+@time_execution
+def day_18(part_1=True) -> int:
+    def is_int(s):
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
+    registers = defaultdict(int)
+    output, rcvd = [], []
+
+    def get_instruction(line: str) -> str:
+        return line.split()[0]
+
+    def get_args(line: str) -> Tuple:
+        _, *args = line.split()
+        return tuple(args)
+
+    def value(key: str | int) -> int:
+        return registers[key] if not is_int(key) else int(key)
+
+    def set_(reg, val: str | int) -> None:
+        registers[reg] = value(val)
+
+    def add(reg, val: str | int) -> None:
+        registers[reg] += value(val)
+
+    def mul(reg, val: str | int) -> None:
+        registers[reg] *= value(val)
+
+    def mod(reg, val: str | int) -> None:
+        registers[reg] %= value(val)
+
+    ops_ = {
+        'snd': lambda x: output.append(value(x)),
+        'set': set_,
+        'add': add,
+        'mul': mul,
+        'mod': mod,
+        'rcv': lambda x: value(x) and (rcvd.append(output[-1]) or float('inf')),
+        'jgz': lambda x, y: value(y) if value(x) else None
+    }
+
+    parse = get_parse_instruction(get_instruction, get_args)
+    instructions: List[Instruction] = _read_input(18, parse=parse)
+
+    instruction_execution(instructions, ops_)
+    return rcvd[0]
+
+# 2147483647 >
 
 
 if __name__ == '__main__':
