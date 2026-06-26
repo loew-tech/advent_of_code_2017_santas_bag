@@ -1,4 +1,5 @@
 import inspect
+import operator
 import sys
 from collections import Counter, defaultdict, deque
 from datetime import datetime
@@ -7,6 +8,7 @@ from typing import List, Callable, Any, Tuple
 
 from santas_bag.constants import ALL_DIRECTIONS
 from santas_bag.grid import taxi_distance
+from santas_bag.registers import Instruction, CompiledInstruction, compiled_instruction_execution
 from santas_bag.search import dfs, search
 from santas_bag.utils import read_input, time_execution
 from santas_bag.parse import ints
@@ -225,6 +227,45 @@ def day_7(part_1=True) -> str | Any:
             right = wght_
 
     return node_wght + right- wrong
+
+
+@time_execution
+def day_8(part_1=True):
+    ops_ = {
+        '<=': operator.le,
+        '>=': operator.ge,
+        '==': operator.eq,
+        '!=': operator.ne,
+        '<': operator.lt,
+        '>': operator.gt,
+    }
+    registers = defaultdict(int)
+
+    def is_int(s):
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
+
+    max_ = -float('inf')
+    def execute(reg_, action_, amt_, condtional_f, val1, val2):
+        v1 = registers[val1] if not is_int(val1) else int(val1)
+        v2 = registers[val2] if not is_int(val2) else int(val2)
+        if not condtional_f(v1, v2):
+            return
+        amount = registers[amt_] if not is_int(amt_) else int(amt_)
+        registers[reg_] += amount if action_ == 'inc' else -amount
+        nonlocal max_
+        max_ = max(max_, registers[reg_])
+
+    def parse(line: str) -> CompiledInstruction:
+        reg, action, amt, _, val1, conditional, val2 = line.split()
+        return CompiledInstruction(execute, (reg, action, amt, ops_[conditional], val1, val2))
+
+    instructions = _read_input(8, parse=parse)
+    compiled_instruction_execution(instructions)
+    return max(registers.values()) if part_1 else max_
 
 
 if __name__ == '__main__':
