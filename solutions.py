@@ -8,7 +8,8 @@ from typing import List, Callable, Any, Tuple
 
 from santas_bag.constants import ALL_DIRECTIONS
 from santas_bag.grid import taxi_distance
-from santas_bag.registers import Instruction, CompiledInstruction, compiled_instruction_execution, instruction_execution
+from santas_bag.registers import Instruction, CompiledInstruction, execute_instructions, \
+    execute_compiled_instructions, RegisterDictionary, get_standard_ops
 from santas_bag.search import dfs, search
 from santas_bag.utils import read_input, time_execution
 from santas_bag.parse import ints, get_parse_instruction
@@ -263,13 +264,13 @@ def day_8(part_1=True):
         reg, action, amt, _, val1, conditional, val2 = line.split()
         return CompiledInstruction(execute, (reg, action, amt, conditionals[conditional], val1, val2))
 
-    instructions = _read_input(8, parse=parse)
-    compiled_instruction_execution(instructions)
+    instructions: List[CompiledInstruction] = _read_input(8, parse=parse)
+    execute_compiled_instructions(instructions)
     return max(registers.values()) if part_1 else max_
 
 
 @time_execution
-def day_18(part_1=True) -> int:
+def day_18_verbose(part_1=True) -> int:
     def is_int(s):
         try:
             int(s)
@@ -305,8 +306,36 @@ def day_18(part_1=True) -> int:
         'jgz': lambda x, y: value(y) if value(x) else None
     }
 
-    instruction_execution(instructions, ops_)
+    execute_instructions(instructions, ops_)
     return rcvd[0]
+
+
+@time_execution
+def day_18(part_1=True) -> int:
+    """
+    An improved implementation of day_18_verbose leveraging more aspects of santas_bag
+    """
+    def get_instruction(line: str) -> str:
+        return line.split()[0]
+
+    def get_args(line: str) -> Tuple:
+        _, *args = line.split()
+        return tuple(args)
+
+    parse = get_parse_instruction(get_instruction, get_args)
+    instructions: List[Instruction] = _read_input(18, parse=parse)
+
+    output, rcvd = [], []
+    registers = RegisterDictionary()
+    ops_ = {**get_standard_ops(registers), **{
+        'snd': lambda x: output.append(registers.value(x)),
+        'rcv': lambda x: registers.value(x) and (rcvd.append(output[-1]) or float('inf')),
+        'jgz': lambda x, y: registers.value(y) if registers.value(x) else None
+    }}
+
+    execute_instructions(instructions, ops_)
+    return rcvd[0]
+
 
 
 if __name__ == '__main__':
