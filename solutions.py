@@ -4,12 +4,12 @@ import sys
 from collections import Counter, defaultdict, deque
 from datetime import datetime
 from operator import floordiv, sub
-from typing import List, Callable, Any, Tuple
+from typing import List, Callable, Any, Tuple, Dict
 
 from santas_bag.constants import ALL_DIRECTIONS
 from santas_bag.grid import taxi_distance
 from santas_bag.registers import Instruction, CompiledInstruction, execute_instructions, \
-    execute_compiled_instructions, RegisterDictionary, get_standard_ops
+    execute_compiled_instructions, RegisterDict, get_standard_ops
 from santas_bag.search import dfs, search
 from santas_bag.utils import read_input, time_execution
 from santas_bag.parse import ints, get_parse_instruction
@@ -325,8 +325,11 @@ def day_18(part_1=True) -> int:
     parse = get_parse_instruction(get_instruction, get_args)
     instructions: List[Instruction] = _read_input(18, parse=parse)
 
+    if not part_1:
+        return _day_18_part_2(instructions)
+
     output, rcvd = [], []
-    registers = RegisterDictionary()
+    registers = RegisterDict()
     ops_ = {**get_standard_ops(registers), **{
         'snd': lambda x: output.append(registers.value(x)),
         'rcv': lambda x: registers.value(x) and (rcvd.append(output[-1]) or float('inf')),
@@ -335,6 +338,48 @@ def day_18(part_1=True) -> int:
 
     execute_instructions(instructions, ops_)
     return rcvd[0]
+
+
+def _day_18_part_2(instructions: List[Instruction]) -> int:
+    n = len(instructions)
+    class Program:
+        def ___init__(self):
+            self.index, self.halted, self.output, self.rcvd = 0, False, [], []
+            self.registers = RegisterDict()
+            self.ops = {
+                **get_standard_ops(self.registers),
+                'snd': lambda x: self.output.append(self.registers.value(x)),
+                # 'rcv': lambda x: self.registers.value(x) and (self.rcvd.append(output[-1]) or float('inf')),
+                'jgz': lambda x, y: self.registers.value(y) if self.registers.value(x) else None
+            }
+
+    p1, p2 = Program(), Program()
+    programs = [p1, p2]
+    received_count = 0
+    while max(p1.index, p2.index) < n and not(p1.halted and p2.halted):
+        for i, p in enumerate(programs):
+            other = programs[(i + 1) % 2]
+            if p.halted:
+                if other.output:
+                    received_count += 1 == 0
+                    p.rcvd.append(other.output.pop())
+                    p.halted = False
+                else:
+                    continue
+            if p1.index >= n:
+                continue
+            instruction, args = instructions[p1.index]
+            if instruction == 'rcv':
+                if other.output:
+                    received_count += 1 == 0
+                    p.rcvd.append(other.output.pop())
+                    p.index += 1
+                else:
+                    p.halted = True
+                continue
+            val = p.ops[instruction](*args)
+            p.index += 1 if val is None else val
+    return received_count
 
 
 
