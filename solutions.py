@@ -1,19 +1,21 @@
+import email.policy
 import inspect
 import operator
+import re
 import sys
 from collections import Counter, defaultdict, deque
-from datetime import datetime
 from operator import floordiv, sub
-from typing import List, Callable, Any, Tuple
+from typing import List, Callable, Any, Tuple, Generator
 
-from santas_bag.constants import ALL_DIRECTIONS
+from santas_bag.constants import ALL_DIRECTIONS, CONDITIONAL_OPS, REGEX_NUMBERS
 from santas_bag.grid import taxi_distance
 from santas_bag.registers import Instruction, CompiledInstruction, execute_instructions, \
-    execute_compiled_instructions, RegisterDictionary, get_standard_ops
-from santas_bag.search import dfs, search
+    execute_compiled_instructions, RegisterDict, get_standard_ops
+from santas_bag.search import dfs, search, bfs
 from santas_bag.utils import read_input, time_execution
-from santas_bag.parse import ints, get_parse_instruction
-from santas_bag.graph import transpose_graph, get_in_degrees
+from santas_bag.parse import ints, get_parse_instruction, get_parse_adjacency_list
+from santas_bag.graph import transpose_graph, get_in_degrees, adjacency_lists_to_dict, get_components, \
+    get_component_for_node
 
 with open('.env') as f:
     session_id = f.readlines()[0]
@@ -232,14 +234,6 @@ def day_7(part_1=True) -> str | Any:
 
 @time_execution
 def day_8(part_1=True):
-    conditionals = {
-        '<=': operator.le,
-        '>=': operator.ge,
-        '==': operator.eq,
-        '!=': operator.ne,
-        '<': operator.lt,
-        '>': operator.gt,
-    }
     registers = defaultdict(int)
 
     def is_int(s):
@@ -262,11 +256,46 @@ def day_8(part_1=True):
 
     def parse(line: str) -> CompiledInstruction:
         reg, action, amt, _, val1, conditional, val2 = line.split()
-        return CompiledInstruction(execute, (reg, action, amt, conditionals[conditional], val1, val2))
+        return CompiledInstruction(execute, (reg, action, amt, CONDITIONAL_OPS[conditional], val1, val2))
 
     instructions: List[CompiledInstruction] = _read_input(8, parse=parse)
     execute_compiled_instructions(instructions)
     return max(registers.values()) if part_1 else max_
+
+
+@time_execution
+def day_12(part_1=True) -> int:
+    def get_vertex(line: str) -> int:
+        return int(line.split('<->')[0].strip())
+
+    def get_edges(line: str) -> list[int]:
+        _, edges = line.split('<->')
+        return list(map(int, edges.split(',')))
+
+    parse = get_parse_adjacency_list(get_vertex, get_edges)
+    adjacency_list: List = _read_input(12, parse=parse)
+    graph = adjacency_lists_to_dict(adjacency_list, undirected=True)
+
+    if part_1:
+        return len(get_component_for_node(graph, 0, lambda n, s: s.get(n, [])))
+    return len(get_components(graph))
+
+
+@time_execution
+def day_15(part_1=True) -> int:
+    mutl_a, mult_b = 16807, 48271
+    mod_ = 2**31 - 1
+    limit = 40_000_000 if part_1 else 5_000_000
+
+    def gen_f(val, mult_, m) -> Generator[int, None, None]:
+        while True:
+            val = (val * mult_) % mod_
+            if not val % m:
+                yield val & 0xFFFF
+
+    a, b = _read_input(15, parse=lambda x: list(map(int, re.findall(REGEX_NUMBERS, x)))[0])
+    ag, bg = gen_f(a, mutl_a, part_1 or 4), gen_f(b, mult_b, part_1 or 8)
+    return sum(next(ag) == next(bg) for _ in range(limit))
 
 
 @time_execution
@@ -326,7 +355,7 @@ def day_18(part_1=True) -> int:
     instructions: List[Instruction] = _read_input(18, parse=parse)
 
     output, rcvd = [], []
-    registers = RegisterDictionary()
+    registers = RegisterDict()
     ops_ = {**get_standard_ops(registers), **{
         'snd': lambda x: output.append(registers.value(x)),
         'rcv': lambda x: registers.value(x) and (rcvd.append(output[-1]) or float('inf')),
@@ -335,7 +364,6 @@ def day_18(part_1=True) -> int:
 
     execute_instructions(instructions, ops_)
     return rcvd[0]
-
 
 
 if __name__ == '__main__':
