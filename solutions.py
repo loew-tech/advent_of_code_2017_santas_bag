@@ -413,8 +413,6 @@ def day_18(part_1=True) -> int:
 
     if not part_1:
         return day_18_part2(instructions)
-    # else:
-    #     return -1
 
     output, rcvd = [], []
     registers = RegisterDict()
@@ -431,9 +429,7 @@ def day_18(part_1=True) -> int:
 def day_18_part2(instructions: List[Instruction]) -> int:
     class Program:
         def __init__(self, id_):
-            self.i = 0
-            self.output = []
-            self.rcvd_count = 0
+            self.i, self.output, self.rcvd_count = 0, [], 0
             self.registers = RegisterDict()
             self.ops = {**get_standard_ops(self.registers),**{
                 'snd': lambda x: self.output.append(self.registers.value(x)),
@@ -446,6 +442,7 @@ def day_18_part2(instructions: List[Instruction]) -> int:
                     return 0
                 self.registers[x] = other.output.pop(0)
                 self.rcvd_count += 1
+                return 1
             self.ops['rcv'] = rcv
 
 
