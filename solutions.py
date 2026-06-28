@@ -429,7 +429,7 @@ def day_18(part_1=True) -> int:
 def day_18_part2(instructions: List[Instruction]) -> int:
     class Program:
         def __init__(self, id_):
-            self.i, self.output, self.rcvd_count = 0, [], 0
+            self.i, self.output, self.send_count = 0, [], 0
             self.registers = RegisterDict()
             self.ops = {**get_standard_ops(self.registers),**{
                 'snd': lambda x: self.output.append(self.registers.value(x)),
@@ -441,29 +441,29 @@ def day_18_part2(instructions: List[Instruction]) -> int:
                 if not other.output:
                     return 0
                 self.registers[x] = other.output.pop(0)
-                self.rcvd_count += 1
+                other.send_count += 1
                 return 1
             self.ops['rcv'] = rcv
 
 
-    p1, p2 = Program(1), Program(2)
-    p1.add_rcv_reference(p2)
-    p2.add_rcv_reference(p1)
-    p1.registers['p'] = 0
-    p2.registers['p'] = 1
+    p0, p1 = Program(1), Program(2)
+    p0.registers['p'], p1.registers['p'] = 0, 1
+    p0.add_rcv_reference(p1)
+    p1.add_rcv_reference(p0)
+
 
     while True:
-        p1_dead = (p1.i >= len(instructions)) or (instructions[p1.i][0] == 'rcv' and not p2.output)
-        p2_dead = (p2.i >= len(instructions)) or (instructions[p2.i][0] == 'rcv' and not p1.output)
+        p1_dead = (p0.i >= len(instructions)) or (instructions[p0.i][0] == 'rcv' and not p1.output)
+        p2_dead = (p1.i >= len(instructions)) or (instructions[p1.i][0] == 'rcv' and not p0.output)
         if p1_dead and p2_dead:
             break
 
-        for i, p in enumerate((p1, p2)):
+        for i, p in enumerate((p0, p1)):
             if 0 <= p.i < len(instructions):
                 instruction, args = instructions[p.i]
                 ret = p.ops[instruction](*args)
                 p.i += ret if ret is not None else 1
-    return p1.rcvd_count
+    return p1.send_count
 
 
 if __name__ == '__main__':
