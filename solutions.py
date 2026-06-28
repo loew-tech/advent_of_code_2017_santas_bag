@@ -316,43 +316,23 @@ def day_16(part_1=True) -> str:
     moves: List[Instruction] = _read_input(16, delim=',', parse=parse)
     dancers = deque('abcdefghijklmnop')
 
-    # # s1
-    # # x3 / 4
-    # # pe / b
-    # moves = [Instruction('s', (1,)), Instruction('x', (3, 4)), Instruction('p', ('e', 'b'))]
-    # dancers = deque('abcde')
-
-    def s(x_: int) -> None:
-        while (x_:=x_-1) > -1:
-            dancers.appendleft(dancers.pop())
-        # print(f'spin {x_}      {dancers=}')
 
     def x(a_, b_: int) -> None:
         dancers[a_], dancers[b_] = dancers[b_], dancers[a_]
-        # print(f'exchange {a_} {b_} {dancers=}')
+    ops_ = {'s': lambda x_: dancers.rotate(x_), 'x': x, 'p': lambda a_, b_: x(dancers.index(a_), dancers.index(b_))}
 
-    def p(a_, b_: str) -> None:
-        x(dancers.index(a_), dancers.index(b_))
-        # print(f'partners {a_} {b_} {dancers=}')
-
-    ops_ = {'s': s, 'x': x, 'p': p}
-
-    seen = []
-    seen_set= set()
-    limit = part_1 or 1_000_000_000
+    seen, seen_set, cycle_len = [], set(), 0
+    limit = 1 if part_1 else 1_000_000_000
     for i in range(limit):
         if (t:=tuple(dancers)) in seen_set:
+            cycle_len = i
             break
         seen.append(t)
         seen_set.add(t)
 
         execute_instructions(moves, ops_)
 
-    if part_1:
-        return ''.join(dancers)
-
-    index = limit % i
-    return ''.join(seen[index])
+    return ''.join(dancers) if part_1 else ''.join(seen[limit % cycle_len])
 
 
 @time_execution
