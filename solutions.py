@@ -5,7 +5,7 @@ import re
 import sys
 from collections import Counter, defaultdict, deque
 from operator import floordiv, sub
-from typing import List, Callable, Any, Tuple, Generator
+from typing import List, Callable, Any, Tuple, Generator, Dict
 
 from santas_bag.constants import ALL_DIRECTIONS, CONDITIONAL_OPS, REGEX_NUMBERS
 from santas_bag.grid import taxi_distance
@@ -411,16 +411,62 @@ def day_18(part_1=True) -> int:
     parse = get_parse_instruction(get_instruction, get_args)
     instructions: List[Instruction] = _read_input(18, parse=parse)
 
+    if not part_1:
+        return day_18_part2(instructions)
+    # else:
+    #     return -1
+
     output, rcvd = [], []
     registers = RegisterDict()
     ops_ = {**get_standard_ops(registers), **{
         'snd': lambda x: output.append(registers.value(x)),
         'rcv': lambda x: registers.value(x) and (rcvd.append(output[-1]) or float('inf')),
-        'jgz': lambda x, y: registers.value(y) if registers.value(x) else None
+        'jgz': lambda x, y: registers.value(y) if registers.value(x) > 0 else None
     }}
 
     execute_instructions(instructions, ops_)
     return rcvd[0]
+
+
+def day_18_part2(instructions: List[Instruction]) -> int:
+    class Program:
+        def __init__(self, id_):
+            self.i = 0
+            self.output = []
+            self.rcvd_count = 0
+            self.registers = RegisterDict()
+            self.ops = {**get_standard_ops(self.registers),**{
+                'snd': lambda x: self.output.append(self.registers.value(x)),
+                'jgz': lambda x, y: self.registers.value(y) if self.registers.value(x) > 0 else None
+            }}
+
+        def add_rcv_reference(self, other: Program):
+            def rcv(x):
+                if not other.output:
+                    return 0
+                self.registers[x] = other.output.pop(0)
+                self.rcvd_count += 1
+            self.ops['rcv'] = rcv
+
+
+    p1, p2 = Program(1), Program(2)
+    p1.add_rcv_reference(p2)
+    p2.add_rcv_reference(p1)
+    p1.registers['p'] = 0
+    p2.registers['p'] = 1
+
+    while True:
+        p1_dead = (p1.i >= len(instructions)) or (instructions[p1.i][0] == 'rcv' and not p2.output)
+        p2_dead = (p2.i >= len(instructions)) or (instructions[p2.i][0] == 'rcv' and not p1.output)
+        if p1_dead and p2_dead:
+            break
+
+        for i, p in enumerate((p1, p2)):
+            if 0 <= p.i < len(instructions):
+                instruction, args = instructions[p.i]
+                ret = p.ops[instruction](*args)
+                p.i += ret if ret is not None else 1
+    return p1.rcvd_count
 
 
 if __name__ == '__main__':
