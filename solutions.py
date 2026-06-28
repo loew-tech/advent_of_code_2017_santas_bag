@@ -299,6 +299,63 @@ def day_15(part_1=True) -> int:
 
 
 @time_execution
+def day_16(part_1=True) -> str:
+    def get_instruction(line: str) -> str:
+        return line[0]
+
+    def get_args(line: str) -> Tuple:
+        if line[0] == 's':
+            return (int(line[1:]),)
+        elif line[0] == 'x':
+            return tuple(ints(line))
+        else:
+            first, second = line.split('/')
+            return first[1:], second
+
+    parse = get_parse_instruction(get_instruction, get_args)
+    moves: List[Instruction] = _read_input(16, delim=',', parse=parse)
+    dancers = deque('abcdefghijklmnop')
+
+    # # s1
+    # # x3 / 4
+    # # pe / b
+    # moves = [Instruction('s', (1,)), Instruction('x', (3, 4)), Instruction('p', ('e', 'b'))]
+    # dancers = deque('abcde')
+
+    def s(x_: int) -> None:
+        while (x_:=x_-1) > -1:
+            dancers.appendleft(dancers.pop())
+        # print(f'spin {x_}      {dancers=}')
+
+    def x(a_, b_: int) -> None:
+        dancers[a_], dancers[b_] = dancers[b_], dancers[a_]
+        # print(f'exchange {a_} {b_} {dancers=}')
+
+    def p(a_, b_: str) -> None:
+        x(dancers.index(a_), dancers.index(b_))
+        # print(f'partners {a_} {b_} {dancers=}')
+
+    ops_ = {'s': s, 'x': x, 'p': p}
+
+    seen = []
+    seen_set= set()
+    limit = part_1 or 1_000_000_000
+    for i in range(limit):
+        if (t:=tuple(dancers)) in seen_set:
+            break
+        seen.append(t)
+        seen_set.add(t)
+
+        execute_instructions(moves, ops_)
+
+    if part_1:
+        return ''.join(dancers)
+
+    index = limit % i
+    return ''.join(seen[index])
+
+
+@time_execution
 def day_18_verbose(part_1=True) -> int:
     def is_int(s):
         try:
