@@ -336,6 +336,26 @@ def day_16(part_1=True) -> str:
 
 
 @time_execution
+def day_17(part_1=True) -> int:
+    steps = _read_input(17, delim=None, parse=int)
+    current, buffer = 0, [0]
+    if part_1:
+        for i in range(1, 2018):
+            if not i % 100_000:
+                print(i)
+            current = ((current + steps) % len(buffer)) + 1
+            buffer.insert(current, i)
+        return buffer[(current + 1) % len(buffer)]
+
+    after_zero = -1
+    for i in range(1, 50_000_001):
+        current = ((current + steps) % i) + 1
+        if current == 1:
+            after_zero = i
+    return after_zero
+
+
+@time_execution
 def day_18_verbose(part_1=True) -> int:
     def is_int(s):
         try:
