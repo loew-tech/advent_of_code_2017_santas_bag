@@ -6,31 +6,26 @@ import sys
 from collections import Counter, defaultdict, deque
 from functools import reduce
 from operator import floordiv, sub, xor
-from typing import List, Callable, Any, Tuple, Generator, Dict
+from typing import List, Any, Tuple, Generator
 
 from santas_bag.constants import ALL_DIRECTIONS, CONDITIONAL_OPS, REGEX_NUMBERS
 from santas_bag.grid import taxi_distance
 from santas_bag.registers import Instruction, CompiledInstruction, execute_instructions, \
     execute_compiled_instructions, RegisterDict, get_standard_ops
-from santas_bag.search import dfs, search, bfs
-from santas_bag.utils import read_input, time_execution
+from santas_bag.search import dfs, search
+from santas_bag.utils import time_execution, get_read_input
 from santas_bag.parse import ints, get_parse_instruction, get_parse_adjacency_list
 from santas_bag.graph import transpose_graph, get_in_degrees, adjacency_lists_to_dict, get_components, \
     get_component_for_node
 
 with open('.env') as f:
     session_id = f.readlines()[0]
-
-def _read_input(day_: int,
-                delim: str | None = '\n',
-                parse: Callable[[List[str] | str], Any | List[Any] | str] | None = None
-                ) -> List | Tuple | int | str | Any:
-    return read_input(2017, day_, session_id, delim=delim, parse=parse)
+read_input = get_read_input(2018, session_id)
 
 
 @time_execution
 def day_1(part_1=True) -> int:
-    data: List[int] = _read_input(1, delim=None, parse=lambda s: [int(i) for i in s.strip()])
+    data: List[int] = read_input(1, delim=None, parse=lambda s: [int(i) for i in s.strip()])
     offset = 1 if part_1 else len(data) // 2
     return sum(v for i, v in enumerate(data) if v == data[i-offset])
 
@@ -51,14 +46,14 @@ def day_2(part_1=True) -> int:
                     return ints_[j],v
         return 0, 1
 
-    data: List[Tuple[int, int]] = _read_input(2, parse=parse_1 if part_1 else parse_2)
+    data: List[Tuple[int, int]] = read_input(2, parse=parse_1 if part_1 else parse_2)
     op_ = sub if part_1 else floordiv
     return sum(op_(mx, mn) for mx, mn in data)
 
 
 @time_execution
 def day_3(part_1=True) -> int:
-    target: int = _read_input(3, delim=None, parse=int)
+    target: int = read_input(3, delim=None, parse=int)
     incs = ((0, -1), (1, 0), (0, 1), (-1, 0))
     if part_1:
         total_squares = side_len = 1
@@ -96,7 +91,7 @@ def day_3(part_1=True) -> int:
 
 @time_execution
 def day_4(part_1=True) -> int:
-    passphrases = _read_input(4, parse=lambda s: s.split())
+    passphrases = read_input(4, parse=lambda s: s.split())
 
     def is_valid_1(s: str) -> bool:
         return Counter(s).most_common(1)[0][1] == 1
@@ -116,7 +111,7 @@ def day_4(part_1=True) -> int:
 
 @time_execution
 def day_5(part_1=True) -> int | float:
-    jumps: List[int] = _read_input(5, parse=int)
+    jumps: List[int] = read_input(5, parse=int)
 
     def is_terminal(indx, space, *args, **kwargs):
         return not (0 <= indx < len(space))
@@ -135,7 +130,7 @@ def day_5(part_1=True) -> int | float:
 
 @time_execution
 def day_6(part_1=True) -> int:
-    banks: List = _read_input(6, delim=None, parse=ints)
+    banks: List = read_input(6, delim=None, parse=ints)
 
     def distribute(indx: int) -> None:
         val = banks[indx]
@@ -183,7 +178,7 @@ def day_7(part_1=True) -> str | Any:
                 continue
             grph[v].append(e.strip())
 
-    _read_input(7, parse=parse)
+    read_input(7, parse=parse)
     graph = {v: [(vv, vertex_weights[vv]) for vv in nghbrs] for v, nghbrs in grph.items()}
     inverse = transpose_graph(graph)
     if part_1:
@@ -258,7 +253,7 @@ def day_8(part_1=True):
         reg, action, amt, _, val1, conditional, val2 = line.split()
         return CompiledInstruction(execute, (reg, action, amt, CONDITIONAL_OPS[conditional], val1, val2))
 
-    instructions: List[CompiledInstruction] = _read_input(8, parse=parse)
+    instructions: List[CompiledInstruction] = read_input(8, parse=parse)
     execute_compiled_instructions(instructions)
     return max(registers.values()) if part_1 else max_
 
@@ -266,7 +261,7 @@ def day_8(part_1=True):
 @time_execution
 def day_9(part_1=True) -> int:
 
-    data: str = _read_input(9, delim=None)
+    data: str = read_input(9, delim=None)
     in_garbage, in_ignore = False, False
     depth, score, garbage_count = 0, 0, 0
     for c in data:
@@ -292,9 +287,9 @@ def day_9(part_1=True) -> int:
 @time_execution
 def day_10(part_1=True):
     if part_1:
-        lengths: List[int] = _read_input(10, delim=None, parse=ints)
+        lengths: List[int] = read_input(10, delim=None, parse=ints)
     else:
-        lengths = [ord(c) for c in _read_input(10, delim=None).strip()]
+        lengths = [ord(c) for c in read_input(10, delim=None).strip()]
         lengths.extend([17, 31, 73, 47, 23])
 
     hash_ = list(range(256))
@@ -331,6 +326,31 @@ def day_10(part_1=True):
 
 
 @time_execution
+def day_11(part_1=True):
+    directions: List[str] = read_input(11, delim=',')
+    # SEE: https://www.redblobgames.com/grids/hexagons/ for description of incs
+    incs = {
+        'n': (1, 0, -1),
+        'ne': (0, 1, -1),
+        'se': (-1, 1, 0),
+        's': (-1, 0, 1),
+        'sw': (0, -1, 1),
+        'nw': (1, -1, 0),
+    }
+
+    y, x, z = 0, 0, 0
+    max_ = 0
+    for dir_ in directions:
+        yi, xi, zi = incs[dir_]
+        y += yi
+        x += xi
+        z += zi
+        max_ = max(max_, (abs(x) + abs(y) + abs(z)) // 2)
+
+    return (abs(x) + abs(y) + abs(z)) // 2 if part_1 else max_
+
+
+@time_execution
 def day_12(part_1=True) -> int:
     def get_vertex(line: str) -> int:
         return int(line.split('<->')[0].strip())
@@ -340,7 +360,7 @@ def day_12(part_1=True) -> int:
         return list(map(int, edges.split(',')))
 
     parse = get_parse_adjacency_list(get_vertex, get_edges)
-    adjacency_list: List = _read_input(12, parse=parse)
+    adjacency_list: List = read_input(12, parse=parse)
     graph = adjacency_lists_to_dict(adjacency_list, undirected=True)
 
     if part_1:
@@ -360,7 +380,7 @@ def day_15(part_1=True) -> int:
             if not val % m:
                 yield val & 0xFFFF
 
-    a, b = _read_input(15, parse=lambda x: list(map(int, re.findall(REGEX_NUMBERS, x)))[0])
+    a, b = read_input(15, parse=lambda x: list(map(int, re.findall(REGEX_NUMBERS, x)))[0])
     ag, bg = gen_f(a, mutl_a, part_1 or 4), gen_f(b, mult_b, part_1 or 8)
     return sum(next(ag) == next(bg) for _ in range(limit))
 
@@ -380,7 +400,7 @@ def day_16(part_1=True) -> str:
             return first[1:], second
 
     parse = get_parse_instruction(get_instruction, get_args)
-    moves: List[Instruction] = _read_input(16, delim=',', parse=parse)
+    moves: List[Instruction] = read_input(16, delim=',', parse=parse)
     dancers = deque('abcdefghijklmnop')
 
 
@@ -404,7 +424,7 @@ def day_16(part_1=True) -> str:
 
 @time_execution
 def day_17(part_1=True) -> int:
-    steps = _read_input(17, delim=None, parse=int)
+    steps = read_input(17, delim=None, parse=int)
     current, buffer = 0, [0]
     if part_1:
         for i in range(1, 2018):
@@ -439,7 +459,7 @@ def day_18_verbose(part_1=True) -> int:
         return tuple(args)
 
     parse = get_parse_instruction(get_instruction, get_args)
-    instructions: List[Instruction] = _read_input(18, parse=parse)
+    instructions: List[Instruction] = read_input(18, parse=parse)
 
     registers = defaultdict(int)
     def value(key: str | int) -> int:
@@ -476,7 +496,7 @@ def day_18(part_1=True) -> int:
         return tuple(args)
 
     parse = get_parse_instruction(get_instruction, get_args)
-    instructions: List[Instruction] = _read_input(18, parse=parse)
+    instructions: List[Instruction] = read_input(18, parse=parse)
 
     if not part_1:
         return day_18_part2(instructions)
