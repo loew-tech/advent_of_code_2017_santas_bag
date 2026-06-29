@@ -264,6 +264,33 @@ def day_8(part_1=True):
 
 
 @time_execution
+def day_9(part_1=True) -> int:
+    if not part_1:
+        return NotImplemented
+
+    data: str = _read_input(9, delim=None)
+    in_garbage, in_ignore = False, False
+    depth, score = 0, 0
+    for c in data:
+        if in_ignore:
+            in_ignore = False
+            continue
+
+        if c == '!':
+            in_ignore = True
+        elif c == '<':
+            in_garbage = True
+        elif c == '>':
+            in_garbage = False
+        elif not in_garbage and c == '{':
+            depth += 1
+        elif not in_garbage and c == '}':
+            score += depth
+            depth -= 1
+    return score
+
+
+@time_execution
 def day_12(part_1=True) -> int:
     def get_vertex(line: str) -> int:
         return int(line.split('<->')[0].strip())
