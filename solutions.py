@@ -58,7 +58,6 @@ def day_2(part_1=True) -> int:
 @time_execution
 def day_3(part_1=True) -> int:
     target: int = _read_input(3, delim=None, parse=int)
-    print(f'{target=}')
     incs = ((0, -1), (1, 0), (0, 1), (-1, 0))
     if part_1:
         total_squares = side_len = 1
@@ -287,6 +286,48 @@ def day_9(part_1=True) -> int:
             score += depth
             depth -= 1
     return score if part_1 else garbage_count
+
+
+@time_execution
+def day_10(part_1=True) -> int:
+    if not part_1:
+        return NotImplemented
+
+    lengths: List[int] = _read_input(10, delim=None, parse=ints)
+    hash_ = list(range(256))
+    mod_ = len(hash_)
+    current, skips = 0, 0
+
+    def rotate(length):
+        left = current
+        right = current + length - 1
+
+        for _ in range(length // 2):
+            hash_[left % mod_], hash_[right % mod_] = hash_[right % mod_], hash_[left % mod_],
+            left += 1
+            right -= 1
+
+    def to_str(len_):
+        ret = ''
+        start = current % mod_
+        end = (current + len_ - 1) % mod_
+        for i, c in enumerate(hash_):
+            if i == start:
+                ret += '(['
+            ret += str(c)
+            if i == start:
+                ret += ']'
+            if i == end:
+                ret += ')'
+            ret += ' '
+        print(ret, '\n')
+
+    for l in lengths:
+        rotate(l)
+        current = (current + l + skips) % mod_
+        skips += 1
+
+    return hash_[0] * hash_[1]
 
 
 @time_execution
