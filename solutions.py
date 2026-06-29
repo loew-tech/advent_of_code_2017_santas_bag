@@ -265,16 +265,15 @@ def day_8(part_1=True):
 
 @time_execution
 def day_9(part_1=True) -> int:
-    if not part_1:
-        return NotImplemented
 
     data: str = _read_input(9, delim=None)
     in_garbage, in_ignore = False, False
-    depth, score = 0, 0
+    depth, score, garbage_count = 0, 0, 0
     for c in data:
         if in_ignore:
             in_ignore = False
             continue
+        garbage_count += in_garbage and c not in '!>'
 
         if c == '!':
             in_ignore = True
@@ -287,7 +286,7 @@ def day_9(part_1=True) -> int:
         elif not in_garbage and c == '}':
             score += depth
             depth -= 1
-    return score
+    return score if part_1 else garbage_count
 
 
 @time_execution
