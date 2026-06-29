@@ -4,7 +4,8 @@ import operator
 import re
 import sys
 from collections import Counter, defaultdict, deque
-from operator import floordiv, sub
+from functools import reduce
+from operator import floordiv, sub, xor
 from typing import List, Callable, Any, Tuple, Generator, Dict
 
 from santas_bag.constants import ALL_DIRECTIONS, CONDITIONAL_OPS, REGEX_NUMBERS
@@ -289,45 +290,44 @@ def day_9(part_1=True) -> int:
 
 
 @time_execution
-def day_10(part_1=True) -> int:
-    if not part_1:
-        return NotImplemented
+def day_10(part_1=True):
+    if part_1:
+        lengths: List[int] = _read_input(10, delim=None, parse=ints)
+    else:
+        lengths = [ord(c) for c in _read_input(10, delim=None).strip()]
+        lengths.extend([17, 31, 73, 47, 23])
 
-    lengths: List[int] = _read_input(10, delim=None, parse=ints)
     hash_ = list(range(256))
     mod_ = len(hash_)
-    current, skips = 0, 0
+    current = 0
+    skip = 0
 
-    def rotate(length):
+    def rotate(length_: int):
         left = current
-        right = current + length - 1
+        right = current + length_ - 1
 
-        for _ in range(length // 2):
-            hash_[left % mod_], hash_[right % mod_] = hash_[right % mod_], hash_[left % mod_],
+        for _ in range(length_ // 2):
+            hash_[left % mod_], hash_[right % mod_] = (
+                hash_[right % mod_],
+                hash_[left % mod_],
+            )
             left += 1
             right -= 1
 
-    def to_str(len_):
-        ret = ''
-        start = current % mod_
-        end = (current + len_ - 1) % mod_
-        for i, c in enumerate(hash_):
-            if i == start:
-                ret += '(['
-            ret += str(c)
-            if i == start:
-                ret += ']'
-            if i == end:
-                ret += ')'
-            ret += ' '
-        print(ret, '\n')
+    rounds = 1 if part_1 else 64
 
-    for l in lengths:
-        rotate(l)
-        current = (current + l + skips) % mod_
-        skips += 1
+    for _ in range(rounds):
+        for length in lengths:
+            rotate(length)
+            current = (current + length + skip) % mod_
+            skip += 1
 
-    return hash_[0] * hash_[1]
+    if part_1:
+        return hash_[0] * hash_[1]
+
+    dense = [reduce(xor, hash_[i:i + 16]) for i in range(0, 256, 16)]
+
+    return ''.join(f'{x:02x}' for x in dense)
 
 
 @time_execution
