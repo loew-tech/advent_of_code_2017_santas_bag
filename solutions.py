@@ -224,7 +224,7 @@ def day_7(part_1=True) -> str | Any:
         else:
             right = wght_
 
-    return node_wght + right- wrong
+    return node_wght + right - wrong
 
 
 @time_execution
@@ -366,6 +366,32 @@ def day_12(part_1=True) -> int:
     if part_1:
         return len(get_component_for_node(graph, 0, lambda n, s: s.get(n, [])))
     return len(get_components(graph))
+
+
+@time_execution
+def day_13(part_1=True) -> int:
+    wall = read_input(13, parse=ints)
+
+    severity, delay = -1, 0
+    if part_1:
+        for depth, range_ in wall:
+            period = (range_ - 1) * 2
+            if not depth % period:
+                severity += depth * range_
+        if part_1:
+            return severity
+        delay += 1
+
+    scanners = [(d, (r - 1) * 2) for d, r in wall]
+    delay, caught = 0, True
+    while caught:
+        caught = False
+        for depth, period in scanners:
+            if not (depth + delay) % period:
+                caught = True
+                break
+        delay += caught
+    return delay
 
 
 @time_execution
