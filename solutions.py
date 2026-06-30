@@ -311,11 +311,9 @@ def day_10(part_1=True):
 
     rounds = 1 if part_1 else 64
 
+    knot_hash = get_knot_hash(lengths, hash_)
     for _ in range(rounds):
-        for length in lengths:
-            rotate(length)
-            current = (current + length + skip) % mod_
-            skip += 1
+        knot_hash()
 
     if part_1:
         return hash_[0] * hash_[1]
@@ -323,6 +321,29 @@ def day_10(part_1=True):
     dense = [reduce(xor, hash_[i:i + 16]) for i in range(0, 256, 16)]
 
     return ''.join(f'{x:02x}' for x in dense)
+
+
+def get_knot_hash(lengths: List[int], hash_):
+    mod_, current, skip = len(hash_), 0, 0
+    def knot_hash():
+        def rotate(length_: int):
+            left = current
+            right = current + length_ - 1
+
+            for _ in range(length_ // 2):
+                hash_[left % mod_], hash_[right % mod_] = (
+                    hash_[right % mod_],
+                    hash_[left % mod_],
+                )
+                left += 1
+                right -= 1
+
+        for length in lengths:
+            nonlocal current, skip
+            rotate(length)
+            current = (current + length + skip) % mod_
+            skip += 1
+    return knot_hash
 
 
 @time_execution
@@ -392,6 +413,14 @@ def day_13(part_1=True) -> int:
                 break
         delay += caught
     return delay
+
+
+
+@time_execution
+def day_14(part_1=True) -> int:
+    key = read_input(14, delim=None)
+    print(key)
+    return NotImplemented
 
 
 @time_execution
