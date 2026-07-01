@@ -1,4 +1,3 @@
-import email.policy
 import inspect
 import operator
 import re
@@ -6,6 +5,7 @@ import sys
 from collections import Counter, defaultdict, deque
 from functools import reduce
 from operator import floordiv, sub, xor
+from string import ascii_uppercase
 from typing import List, Any, Tuple, Generator
 
 from santas_bag.constants import ALL_DIRECTIONS, CONDITIONAL_OPS, REGEX_NUMBERS, CARDINAL_DIRECTIONS
@@ -20,7 +20,7 @@ from santas_bag.graph import transpose_graph, get_in_degrees, adjacency_lists_to
 
 with open('.env') as f:
     session_id = f.readlines()[0]
-read_input = get_read_input(2018, session_id)
+read_input = get_read_input(2017, session_id)
 
 
 @time_execution
@@ -142,7 +142,6 @@ def day_6(part_1=True) -> int:
             indx = (indx + 1) % len(banks)
 
     seen_, count = defaultdict(list), 0
-    observe_count = 2
     while True:
         t = tuple(banks)
         seen_[t].append(count)
@@ -393,7 +392,7 @@ def day_12(part_1=True) -> int:
 def day_13(part_1=True) -> int:
     wall = read_input(13, parse=ints)
 
-    severity, delay = -1, 0
+    severity, delay = 0, 0
     if part_1:
         for depth, range_ in wall:
             period = (range_ - 1) * 2
@@ -446,7 +445,6 @@ def day_14(part_1=True) -> int:
             yield y_, x_
 
     return len(get_components(graph, get_neighbors))
-
 
 
 @time_execution
@@ -632,6 +630,37 @@ def day_18_part2(instructions: List[Instruction]) -> int:
                 ret = p.ops[instruction](*args)
                 p.i += ret if ret is not None else 1
     return p1.send_count
+
+
+@time_execution
+def day_19(part_1=True) -> str:
+    grid: List[str] = read_input(19, delim=None, parse=lambda s: s.split('\n'))
+    valid = {(y, x) for y, row in enumerate(grid) for x, v in enumerate(row) if v.strip()}
+
+    def get_neighbors(node, space):
+        (y, x), (dy, dx) = node
+        if grid[y][x] == '+':
+            if dy:
+                yield ((y, x + 1), (0, 1)) if (y, x + 1) in valid and space[y][x + 1] == '-' else ((y, x - 1), (0, -1))
+            else:
+                yield ((y + 1, x), (1, 0)) if (y + 1, x) in valid and space[y + 1][x] == '|' else ((y - 1, x), (-1, 0))
+        elif (y + dy, x + dx) in valid:
+            yield (y + dy, x + dx), (dy, dx)
+
+    visited = []
+    def on_visit(node, steps, space):
+        (y, x), _ = node
+        if space[y][x] in ascii_uppercase:
+            visited.append(space[y][x])
+
+    start_x = grid[0].index('|')
+    _, step = dfs(((0, start_x), (1, 0)),
+        grid,
+        lambda n, s: False,
+        get_neighbors,
+        on_visit=on_visit,
+        revisit=True)
+    return ''.join(visited)
 
 
 if __name__ == '__main__':
