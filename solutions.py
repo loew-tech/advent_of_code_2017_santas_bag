@@ -8,7 +8,7 @@ from functools import reduce
 from operator import floordiv, sub, xor
 from typing import List, Any, Tuple, Generator
 
-from santas_bag.constants import ALL_DIRECTIONS, CONDITIONAL_OPS, REGEX_NUMBERS
+from santas_bag.constants import ALL_DIRECTIONS, CONDITIONAL_OPS, REGEX_NUMBERS, CARDINAL_DIRECTIONS
 from santas_bag.grid import taxi_distance
 from santas_bag.registers import Instruction, CompiledInstruction, execute_instructions, \
     execute_compiled_instructions, RegisterDict, get_standard_ops
@@ -420,23 +420,32 @@ def day_13(part_1=True) -> int:
 def day_14(part_1=True) -> int:
     key: str = read_input(14, delim=None).strip()
 
-    total_set_bits = 0
-    for i in range(128):
+    bits = set()
+    for y in range(128):
         hash_ = list(range(256))
-        lengths = [ord(c) for c in f'{key}-{i}']
+        lengths = [ord(c) for c in f'{key}-{y}']
         lengths.extend([17, 31, 73, 47, 23])
         knot_hash = get_knot_hash(lengths, hash_)
         for _ in range(64):
             knot_hash()
         dense = [reduce(xor, hash_[j:j + 16]) for j in range(0, 256, 16)]
-
-        # Force each of the 16 bytes to be represented as 8 bits
-        # This creates a string of exactly 128 characters (16 bytes * 8 bits)
         row_binary = "".join(f"{byte:08b}" for byte in dense)
+        for x, b in enumerate(row_binary):
+            if b == '1':
+                bits.add((y, x))
 
-        # Now count the ones
-        total_set_bits += row_binary.count('1')
-    return total_set_bits
+    if part_1:
+        return len(bits)
+
+    graph = {
+        (y, x): [(y+yi, x+xi) for yi, xi in CARDINAL_DIRECTIONS
+                      if (y + yi, x + xi) in bits] for y, x in bits
+    }
+    def get_neighbors(node, space, *args, **kwargs) -> Generator[Tuple[int, int], None, None]:
+        for y_, x_ in space.get(node, []):
+            yield y_, x_
+
+    return len(get_components(graph, get_neighbors))
 
 
 
