@@ -418,9 +418,26 @@ def day_13(part_1=True) -> int:
 
 @time_execution
 def day_14(part_1=True) -> int:
-    key = read_input(14, delim=None)
-    print(key)
-    return NotImplemented
+    key: str = read_input(14, delim=None).strip()
+
+    total_set_bits = 0
+    for i in range(128):
+        hash_ = list(range(256))
+        lengths = [ord(c) for c in f'{key}-{i}']
+        lengths.extend([17, 31, 73, 47, 23])
+        knot_hash = get_knot_hash(lengths, hash_)
+        for _ in range(64):
+            knot_hash()
+        dense = [reduce(xor, hash_[j:j + 16]) for j in range(0, 256, 16)]
+
+        # Force each of the 16 bytes to be represented as 8 bits
+        # This creates a string of exactly 128 characters (16 bytes * 8 bits)
+        row_binary = "".join(f"{byte:08b}" for byte in dense)
+
+        # Now count the ones
+        total_set_bits += row_binary.count('1')
+    return total_set_bits
+
 
 
 @time_execution
