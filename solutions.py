@@ -647,11 +647,12 @@ def day_19(part_1=True) -> str:
         elif (y + dy, x + dx) in valid:
             yield (y + dy, x + dx), (dy, dx)
 
-    visited = []
-    def on_visit(node, steps, space):
+    visited, steps = [], []
+    def on_visit(node, steps_, space):
         (y, x), _ = node
         if space[y][x] in ascii_uppercase:
             visited.append(space[y][x])
+            steps.append(steps_ + 1)
 
     start_x = grid[0].index('|')
     _, step = dfs(((0, start_x), (1, 0)),
@@ -660,7 +661,7 @@ def day_19(part_1=True) -> str:
         get_neighbors,
         on_visit=on_visit,
         revisit=True)
-    return ''.join(visited)
+    return ''.join(visited) if part_1 else steps[-1]
 
 
 if __name__ == '__main__':
