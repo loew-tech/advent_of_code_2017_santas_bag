@@ -1,8 +1,10 @@
+import heapq
 import inspect
+import itertools
 import operator
 import re
 import sys
-from collections import Counter, defaultdict, deque
+from collections import Counter, defaultdict, deque, namedtuple
 from functools import reduce
 from operator import floordiv, sub, xor
 from string import ascii_uppercase
@@ -664,10 +666,73 @@ def day_19(part_1=True) -> str:
     return ''.join(visited) if part_1 else steps[-1]
 
 
+@time_execution
+def day_20(part_1=True) -> int:
+    Triplet = namedtuple('Triplet', ['x', 'y', 'z'])
+    class Particle:
+        _id_generator = itertools.count(start=0)
+
+        def __init__(self, id_: int, start, vel, acc: Triplet):
+            self.id = id_
+            self.y, self.x, self.z = start
+            self.vx, self.vy, self.vz = vel
+            self.acc = acc
+
+        def move(self):
+            self.x += self.vx
+            self.y += self.vy
+            self.z += self.vz
+
+            self.vx += self.acc.x
+            self.vy += self.acc.y
+            self.vz += self.acc.z
+
+        @property
+        def distance(self):
+            return abs(self.x) + abs(self.y) + abs(self.z)
+
+        def __lt__(self, other):
+            return self.distance < other.distance
+
+        def __repr__(self):
+            return (f'Particle(id={self.id}, Pos=({self.x}, {self.y}, {self.z}), Vel=({self.vx}, {self.vy}, {self.vz}), '
+                    f'Acc=({self.acc})')
+
+        @classmethod
+        def from_line(cls, line: str):
+            vals = ints(line)
+            return cls(next(cls._id_generator), Triplet(*vals[:3]), Triplet(*vals[3:6]), Triplet(*vals[6:]))
+
+
+    particles: List[Particle] = read_input(20, parse=Particle.from_line)
+
+    if part_1:
+
+        def sort_key(p):
+            acc_mag = abs(p.acc.x) + abs(p.acc.y) + abs(p.acc.z)
+            vel_mag = abs(p.vx) + abs(p.vy) + abs(p.vz)
+            pos_mag = abs(p.x) + abs(p.y) + abs(p.z)
+            return acc_mag, vel_mag, pos_mag
+
+        return sorted(particles, key=sort_key)[0].id
+    order = [p.id for p in particles]
+    count_down = 100
+    while count_down := count_down - 1:
+        for p in particles:
+            p.move()
+        heapq.heapify(particles)
+        for i, p in enumerate(particles):
+            if not p.id == order[i]:
+                count_down = 100
+                order = [p.id for p in particles]
+                break
+    return particles[0].id
+
+
 if __name__ == '__main__':
     args_ = (f'day_{i}' for i in (sys.argv[1:] if
                                   sys.argv[1:] else range(1, 26)) if
-             type(i) == int or i.isnumeric())
+             type(i) == int or str(i).isnumeric())
     members = inspect.getmembers(inspect.getmodule(inspect.currentframe()))
     funcs = {name: member for name, member in members
              if inspect.isfunction(member)}
