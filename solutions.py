@@ -674,22 +674,26 @@ def day_20(part_1=True) -> int:
 
         def __init__(self, id_: int, start, vel, acc: Triplet):
             self.id = id_
-            self.y, self.x, self.z = start
+            self.x, self.y, self.z = start
             self.vx, self.vy, self.vz = vel
             self.acc = acc
 
         def move(self):
-            self.x += self.vx
-            self.y += self.vy
-            self.z += self.vz
-
             self.vx += self.acc.x
             self.vy += self.acc.y
             self.vz += self.acc.z
 
+            self.x += self.vx
+            self.y += self.vy
+            self.z += self.vz
+
         @property
         def distance(self):
             return abs(self.x) + abs(self.y) + abs(self.z)
+
+        @property
+        def loc(self):
+            return self.x, self.y, self.z
 
         def __lt__(self, other):
             return self.distance < other.distance
@@ -715,18 +719,22 @@ def day_20(part_1=True) -> int:
             return acc_mag, vel_mag, pos_mag
 
         return sorted(particles, key=sort_key)[0].id
-    order = [p.id for p in particles]
-    count_down = 100
+
+    stable_count, last_count = 0, len(particles)
+    count_down = 1_000
     while count_down := count_down - 1:
         for p in particles:
             p.move()
-        heapq.heapify(particles)
-        for i, p in enumerate(particles):
-            if not p.id == order[i]:
-                count_down = 100
-                order = [p.id for p in particles]
-                break
-    return particles[0].id
+
+        locs = defaultdict(list)
+        for p in particles:
+            locs[p.loc].append(p)
+        particles = [group[0] for group in locs.values() if len(group) == 1]
+
+        if not len(particles) == last_count:
+            count_down = 1_000
+            last_count = len(particles)
+    return len(particles)
 
 
 if __name__ == '__main__':
